@@ -237,6 +237,45 @@ public class ArenaUtils extends PluginArenaUtils {
     }
   }
 
+  /**
+   * Apply scale of 0.5 to spectators/dead on supported servers (e.g., Paper 1.20.2+).
+   * Does nothing on unsupported versions.
+   */
+  public static void applySpectatorScale(Arena arena) {
+    if (arena == null) return;
+    java.util.List<Player> targets = new java.util.ArrayList<>();
+    for (Player p : arena.getPlayers()) {
+      if (arena.isSpectatorPlayer(p) || arena.isDeathPlayer(p)) {
+        targets.add(p);
+      }
+    }
+    for (Player target : targets) {
+      setEntityScaleIfSupported(target, 0.5f);
+    }
+  }
+
+  /**
+   * Reset a player's scale to default (1.0) on supported servers.
+   */
+  public static void resetScaleFor(Player player) {
+    if (player == null) return;
+    setEntityScaleIfSupported(player, 1.0f);
+  }
+
+  /**
+   * Attempts to call Player#setScale(float) reflectively if present.
+   */
+  private static void setEntityScaleIfSupported(Player player, float scale) {
+    try {
+      java.lang.reflect.Method m = player.getClass().getMethod("setScale", float.class);
+      m.invoke(player, scale);
+    } catch (NoSuchMethodException ignored) {
+      // API not available on this server (likely non-Paper or older version)
+    } catch (Throwable ignored) {
+      // Any other reflective issues are ignored to maintain compatibility
+    }
+  }
+
   private static void addBowLocator(Arena arena, Location loc) {
     ItemStack bowLocator = new ItemStack(Material.COMPASS, 1);
     ItemMeta bowMeta = bowLocator.getItemMeta();

@@ -412,6 +412,8 @@ public class ArenaEvents extends PluginArenaEvents {
     ArenaUtils.showSpectatorsToEachOther(arena);
     // Apply gray glow so spectators/dead can recognize their state
     ArenaUtils.applySpectatorGlow(arena);
+    // Apply half-scale (0.5) to spectators/dead if supported
+    ArenaUtils.applySpectatorScale(arena);
     player.setAllowFlight(true);
     player.setFlying(true);
     player.getInventory().clear();
@@ -461,6 +463,8 @@ public class ArenaEvents extends PluginArenaEvents {
       ArenaUtils.showSpectatorsToEachOther(arena);
       // Apply gray glow so spectators/dead can recognize their state
       ArenaUtils.applySpectatorGlow(arena);
+      // Apply half-scale (0.5) to spectators/dead if supported
+      ArenaUtils.applySpectatorScale(arena);
       VersionUtils.setCollidable(player, false);
       player.setGameMode(GameMode.SURVIVAL);
       player.removePotionEffect(PotionEffectType.NIGHT_VISION);

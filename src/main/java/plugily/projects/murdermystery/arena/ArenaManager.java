@@ -70,6 +70,8 @@ public class ArenaManager extends PluginArenaManager {
     super.leaveAttempt(player, arena);
     // Clear any spectator glow artifacts when leaving
     ArenaUtils.clearSpectatorGlowFor(player);
+    // Reset player scale on leave (if supported)
+    ArenaUtils.resetScaleFor(player);
     if(pluginArena.isDeathPlayer(player)) {
       pluginArena.removeDeathPlayer(player);
     }
@@ -145,6 +147,7 @@ public class ArenaManager extends PluginArenaManager {
     // Clear spectator glow for all arena players before teardown
     for (Player p : pluginArena.getPlayers()) {
       ArenaUtils.clearSpectatorGlowFor(p);
+      ArenaUtils.resetScaleFor(p);
     }
     ((MapRestorerManager) pluginArena.getMapRestorerManager()).removeBowHolo();
     boolean murderWon = arena.getPlayersLeft().size() == pluginArena.aliveMurderer();
