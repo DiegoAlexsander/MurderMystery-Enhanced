@@ -85,15 +85,14 @@ public class ArenaEvents extends PluginArenaEvents {
       }
       VersionUtils.sendTitles(p, "§cLIGHTS HAVE BEEN SABOTAGED", null, 5, 40, 10);
       // Prefer server-supported Darkness (1.19+) else fall back to Blindness
-      try {
-        // Apply darkness if XPotion supports it
-        XPotion value = XPotion.matchXPotion("DARKNESS").orElse(null);
-        if (value != null) {
-          value.buildPotionEffect(20 * 30, 1).apply(p);
-        } else {
-          XPotion.BLINDNESS.buildPotionEffect(20 * 30, 1).apply(p);
+      // Use Paper API for Darkness when available (1.19+); else Blindness
+      if (plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.isCurrentEqualOrHigher(plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.v1_19)) {
+        try {
+          p.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.DARKNESS, 20 * 30, 0, true, false, true));
+        } catch (Throwable ignored) {
+          try { XPotion.BLINDNESS.buildPotionEffect(20 * 30, 1).apply(p); } catch (Throwable ignored2) {}
         }
-      } catch (Throwable t) {
+      } else {
         try { XPotion.BLINDNESS.buildPotionEffect(20 * 30, 1).apply(p); } catch (Throwable ignored) {}
       }
     }
@@ -246,7 +245,8 @@ public class ArenaEvents extends PluginArenaEvents {
     }
     // If a murderer hits threshold, trigger Lights Sabotage event
     if(Role.isRole(Role.MURDERER, user, arena)
-      && user.getStatistic("LOCAL_GOLD") >= plugin.getConfig().getInt("Gold.Amount.Bow", 10)) {
+      && user.getStatistic("LOCAL_GOLD") >= plugin.getConfig().getInt("Gold.Amount.Bow", 10)
+      && plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.isCurrentEqualOrHigher(plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.v1_19)) {
       // Do not reset their gold; they keep collecting
       triggerLightsSabotage(arena, player);
     }
