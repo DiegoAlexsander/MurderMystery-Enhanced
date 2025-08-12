@@ -188,7 +188,9 @@ public class ArenaEvents extends PluginArenaEvents {
       return;
     }
 
-    if(user.getStatistic("LOCAL_GOLD") >= plugin.getConfig().getInt("Gold.Amount.Bow", 10)) {
+    // Grant bow on gold threshold only for non-murderers
+    if(!Role.isRole(Role.MURDERER, user, arena)
+      && user.getStatistic("LOCAL_GOLD") >= plugin.getConfig().getInt("Gold.Amount.Bow", 10)) {
       user.setStatistic("LOCAL_GOLD", 0);
       new TitleBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_BOW_SHOT_TITLE")
         .asKey()
@@ -406,6 +408,10 @@ public class ArenaEvents extends PluginArenaEvents {
     player.setGameMode(GameMode.SURVIVAL);
     user.setStatistic("LOCAL_GOLD", 0);
     ArenaUtils.hidePlayer(player, arena);
+    // After globally hiding, re-show spectators/dead players to each other
+    ArenaUtils.showSpectatorsToEachOther(arena);
+    // Apply gray glow so spectators/dead can recognize their state
+    ArenaUtils.applySpectatorGlow(arena);
     player.setAllowFlight(true);
     player.setFlying(true);
     player.getInventory().clear();
@@ -451,6 +457,10 @@ public class ArenaEvents extends PluginArenaEvents {
       player.setFlying(true);
       user.setSpectator(true);
       ArenaUtils.hidePlayer(player, arena);
+      // After globally hiding, re-show spectators/dead players to each other
+      ArenaUtils.showSpectatorsToEachOther(arena);
+      // Apply gray glow so spectators/dead can recognize their state
+      ArenaUtils.applySpectatorGlow(arena);
       VersionUtils.setCollidable(player, false);
       player.setGameMode(GameMode.SURVIVAL);
       player.removePotionEffect(PotionEffectType.NIGHT_VISION);

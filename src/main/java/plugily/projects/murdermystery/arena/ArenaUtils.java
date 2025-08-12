@@ -24,6 +24,9 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.ChatColor;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 import plugily.projects.minigamesbox.api.arena.IArenaState;
 import plugily.projects.minigamesbox.api.arena.IPluginArena;
 import plugily.projects.minigamesbox.api.user.IUser;
@@ -123,6 +126,115 @@ public class ArenaUtils extends PluginArenaUtils {
 
     arena.setBowHologram(hologram);
     addBowLocator(arena, hologram.getLocation());
+  }
+
+  /**
+   * Ensure that spectators and dead players can see each other while staying hidden from alive players.
+   * This selectively shows all spectators/dead players to each other after global hide logic runs.
+   */
+  public static void showSpectatorsToEachOther(Arena arena) {
+    if (arena == null) {
+      return;
+    }
+
+    // Collect all viewers that are either spectators or marked as dead within this arena
+    java.util.List<Player> spectatorViewers = new java.util.ArrayList<>();
+    for (Player arenaPlayer : arena.getPlayers()) {
+      if (arena.isSpectatorPlayer(arenaPlayer) || arena.isDeathPlayer(arenaPlayer)) {
+        spectatorViewers.add(arenaPlayer);
+      }
+    }
+
+    if (spectatorViewers.size() <= 1) {
+      return;
+    }
+
+    // Show each spectator/dead player to every other spectator/dead player only
+    for (Player viewer : spectatorViewers) {
+      for (Player target : spectatorViewers) {
+        if (viewer.equals(target)) {
+          continue;
+        }
+        try {
+          // Modern API (1.13+)
+          viewer.showPlayer(getPlugin(), target);
+        } catch (NoSuchMethodError ignored) {
+          // Legacy API fallback
+          try {
+            viewer.showPlayer(target);
+          } catch (Throwable ignoredToo) {
+            // ignore if API not available; better invisible than visible to alive players
+          }
+        }
+      }
+    }
+  }
+
+  private static final String SPECTATOR_TEAM_NAME = "MM_SPECTATORS";
+
+  /**
+   * Apply gray glow to spectators/dead for all spectator viewers in the arena.
+   */
+  public static void applySpectatorGlow(Arena arena) {
+    if (arena == null) return;
+
+    java.util.List<Player> targets = new java.util.ArrayList<>();
+    for (Player p : arena.getPlayers()) {
+      if (arena.isSpectatorPlayer(p) || arena.isDeathPlayer(p)) {
+        targets.add(p);
+      }
+    }
+    if (targets.isEmpty()) return;
+
+    // Enable glowing on targets (entity-side)
+    for (Player target : targets) {
+      try { target.setGlowing(true); } catch (Throwable ignored) {}
+    }
+
+    // Per-viewer scoreboard team coloring for gray outline
+    for (Player viewer : targets) {
+      Scoreboard board;
+      try {
+        board = viewer.getScoreboard();
+      } catch (Throwable t) {
+        continue;
+      }
+      if (board == null) continue;
+
+      Team team = board.getTeam(SPECTATOR_TEAM_NAME);
+      if (team == null) {
+        try { team = board.registerNewTeam(SPECTATOR_TEAM_NAME); } catch (IllegalArgumentException ignored) { team = board.getTeam(SPECTATOR_TEAM_NAME); }
+      }
+      if (team == null) continue;
+      try { team.setColor(ChatColor.GRAY); } catch (Throwable ignored) {}
+      for (Player target : targets) {
+        if (viewer.equals(target)) continue;
+        String entry = target.getName();
+        if (!team.hasEntry(entry)) {
+          try { team.addEntry(entry); } catch (IllegalArgumentException ignored) {}
+        }
+      }
+    }
+  }
+
+  /**
+   * Clear spectator glow for a specific player across likely viewers.
+   */
+  public static void clearSpectatorGlowFor(Player player) {
+    if (player == null) return;
+    try { player.setGlowing(false); } catch (Throwable ignored) {}
+    // Remove from spectator team on all online players' scoreboards to be safe
+    for (Player online : Bukkit.getOnlinePlayers()) {
+      Scoreboard board;
+      try { board = online.getScoreboard(); } catch (Throwable t) { continue; }
+      if (board == null) continue;
+      Team team = board.getTeam(SPECTATOR_TEAM_NAME);
+      if (team == null) continue;
+      String entry = player.getName();
+      if (team.hasEntry(entry)) {
+        try { team.removeEntry(entry); } catch (Throwable ignored) {}
+      }
+    }
   }
 
   private static void addBowLocator(Arena arena, Location loc) {

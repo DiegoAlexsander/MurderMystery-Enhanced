@@ -68,6 +68,8 @@ public class ArenaManager extends PluginArenaManager {
       return;
     }
     super.leaveAttempt(player, arena);
+    // Clear any spectator glow artifacts when leaving
+    ArenaUtils.clearSpectatorGlowFor(player);
     if(pluginArena.isDeathPlayer(player)) {
       pluginArena.removeDeathPlayer(player);
     }
@@ -139,6 +141,10 @@ public class ArenaManager extends PluginArenaManager {
       if(specialBlock.getArmorStandHologram() != null) {
         specialBlock.getArmorStandHologram().delete();
       }
+    }
+    // Clear spectator glow for all arena players before teardown
+    for (Player p : pluginArena.getPlayers()) {
+      ArenaUtils.clearSpectatorGlowFor(p);
     }
     ((MapRestorerManager) pluginArena.getMapRestorerManager()).removeBowHolo();
     boolean murderWon = arena.getPlayersLeft().size() == pluginArena.aliveMurderer();
