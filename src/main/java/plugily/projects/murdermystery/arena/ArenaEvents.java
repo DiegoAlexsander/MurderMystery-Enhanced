@@ -74,6 +74,42 @@ public class ArenaEvents extends PluginArenaEvents {
     plugin.getServer().getPluginManager().registerEvents(this, plugin);
   }
 
+  private void triggerLightsSabotage(Arena arena, Player murderer) {
+    // Send titles and apply darkness/night vision
+    for (Player p : arena.getPlayers()) {
+      if (p.equals(murderer)) {
+        // Murderer gets green title and optionally reinforced night vision
+        VersionUtils.sendTitles(p, "§aYOU HAVE SABOTAGED ALL LIGHT SOURCES", null, 5, 40, 10);
+        try { XPotion.NIGHT_VISION.buildPotionEffect(20 * 35, 1).apply(p); } catch (Throwable ignored) {}
+        continue;
+      }
+      VersionUtils.sendTitles(p, "§cLIGHTS HAVE BEEN SABOTAGED", null, 5, 40, 10);
+      // Prefer server-supported Darkness (1.19+) else fall back to Blindness
+      try {
+        // Apply darkness if XPotion supports it
+        XPotion value = XPotion.matchXPotion("DARKNESS").orElse(null);
+        if (value != null) {
+          value.buildPotionEffect(20 * 30, 1).apply(p);
+        } else {
+          XPotion.BLINDNESS.buildPotionEffect(20 * 30, 1).apply(p);
+        }
+      } catch (Throwable t) {
+        try { XPotion.BLINDNESS.buildPotionEffect(20 * 30, 1).apply(p); } catch (Throwable ignored) {}
+      }
+    }
+
+    // After 30s, send restored messages
+    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+      for (Player p : arena.getPlayers()) {
+        if (p.equals(murderer)) {
+          p.sendMessage("§cLIGHTS HAVE BEEN RESTORED");
+        } else {
+          p.sendMessage("§aLIGHTS HAVE BEEN RESTORED");
+        }
+      }
+    }, 20L * 30);
+  }
+
   @Override
   public void handleIngameVoidDeath(Player victim, IPluginArena arena) {
     Arena pluginArena = plugin.getArenaRegistry().getArena(arena.getId());
@@ -207,6 +243,12 @@ public class ArenaEvents extends PluginArenaEvents {
         .setItem(
           /* same for all roles */ ItemPosition.GOLD_INGOTS.getOtherRolesItemPosition(),
           null);
+    }
+    // If a murderer hits threshold, trigger Lights Sabotage event
+    if(Role.isRole(Role.MURDERER, user, arena)
+      && user.getStatistic("LOCAL_GOLD") >= plugin.getConfig().getInt("Gold.Amount.Bow", 10)) {
+      // Do not reset their gold; they keep collecting
+      triggerLightsSabotage(arena, player);
     }
   }
 

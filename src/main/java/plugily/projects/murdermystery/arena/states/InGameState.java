@@ -74,6 +74,9 @@ public class InGameState extends PluginInGameState {
         try { p.setExp(0f); } catch (Throwable ignored) {}
       }
     }
+
+    // Ensure Murderer always has Night Vision while in-game
+    ensureMurdererNightVision(pluginArena);
   }
 
   private void addMurdererSpeed(Arena pluginArena) {
@@ -84,6 +87,20 @@ public class InGameState extends PluginInGameState {
           // no potion because it adds particles which can be identified
           player.setWalkSpeed(0.1f * multiplier);
         }
+      }
+    }
+  }
+
+  private void ensureMurdererNightVision(Arena pluginArena) {
+    for(Player player : pluginArena.getMurdererList()) {
+      if(!pluginArena.isMurderAlive(player)) {
+        continue;
+      }
+      // Re-apply periodically to ensure persistence
+      try {
+        XPotion.NIGHT_VISION.buildPotionEffect(20 * 60, 1).apply(player);
+      } catch (Throwable ignored) {
+        // ignore if not supported (very old servers)
       }
     }
   }
