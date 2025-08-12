@@ -31,6 +31,36 @@ public class PlaceholderInitializer {
   }
 
   private void registerPlaceholders() {
+    // Static configured values for scoreboard: murderer rampage seconds and cooldown seconds
+    getPlaceholderManager().registerPlaceholder(new Placeholder("murderer_rampage", Placeholder.PlaceholderType.ARENA, Placeholder.PlaceholderExecutor.ALL) {
+      @Override
+      public String getValue(Player player, IPluginArena arena) {
+        return Integer.toString(plugin.getConfig().getInt("Murderer.Rampage-Seconds", 10));
+      }
+    });
+
+    getPlaceholderManager().registerPlaceholder(new Placeholder("murderer_cooldown", Placeholder.PlaceholderType.ARENA, Placeholder.PlaceholderExecutor.ALL) {
+      @Override
+      public String getValue(Player player, IPluginArena arena) {
+        return Integer.toString(plugin.getConfig().getInt("Murderer.Cooldown-Seconds", 30));
+      }
+    });
+
+    // Alias placeholders with hyphen names to match configs like %murderer-cooldown%
+    getPlaceholderManager().registerPlaceholder(new Placeholder("murderer-rampage", Placeholder.PlaceholderType.ARENA, Placeholder.PlaceholderExecutor.ALL) {
+      @Override
+      public String getValue(Player player, IPluginArena arena) {
+        return Integer.toString(plugin.getConfig().getInt("Murderer.Rampage-Seconds", 10));
+      }
+    });
+
+    getPlaceholderManager().registerPlaceholder(new Placeholder("murderer-cooldown", Placeholder.PlaceholderType.ARENA, Placeholder.PlaceholderExecutor.ALL) {
+      @Override
+      public String getValue(Player player, IPluginArena arena) {
+        return Integer.toString(plugin.getConfig().getInt("Murderer.Cooldown-Seconds", 30));
+      }
+    });
+
     getPlaceholderManager().registerPlaceholder(new Placeholder("detective_list", Placeholder.PlaceholderType.ARENA, Placeholder.PlaceholderExecutor.ALL) {
       @Override
       public String getValue(Player player, IPluginArena arena) {

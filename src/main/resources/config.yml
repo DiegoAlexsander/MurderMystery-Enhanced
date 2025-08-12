@@ -253,6 +253,10 @@ Murderer:
   # Should the Murderer get a locator with Innocent location information
   # gets the locator if arena time lower 30 and only one innocent left
   Locator: true
+  # Seconds the Murderer can freely kill after each kill (rampage)
+  Rampage-Seconds: 10
+  # Seconds the Murderer cannot attack after rampage ends (global cooldown)
+  Cooldown-Seconds: 30
 
 
 Sword:

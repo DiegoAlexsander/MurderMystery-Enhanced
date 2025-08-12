@@ -241,6 +241,13 @@ public class ArenaEvents extends PluginArenaEvents {
       return;
     }
 
+    // prevent hits during global murderer cooldown
+    if(plugin.getUserManager().getUser(attacker).getCooldown("murderer_cooldown") > 0) {
+      int remain = (int) Math.ceil(plugin.getUserManager().getUser(attacker).getCooldown("murderer_cooldown"));
+      attacker.sendMessage("§cYour sword is on cooldown (" + remain + "s)");
+      return;
+    }
+
     //check if sword has cooldown
     if(ServerVersion.Version.isCurrentLower(ServerVersion.Version.v1_11)) {
       if(plugin.getUserManager().getUser(attacker).getCooldown("sword_attack") > 0) {
@@ -274,6 +281,9 @@ public class ArenaEvents extends PluginArenaEvents {
       }
       ArenaUtils.dropBowAndAnnounce(arena, victim);
     }
+
+    // Start or refresh Murderer rampage on every kill
+    MurdererTimerManager.startOrRefreshRampage(attacker);
   }
 
 

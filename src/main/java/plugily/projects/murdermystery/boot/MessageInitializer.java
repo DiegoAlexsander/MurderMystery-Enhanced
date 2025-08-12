@@ -41,6 +41,9 @@ public class MessageInitializer {
 
     getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_ROLE_CHANCES_ACTION_BAR", new Message("In-Game.Messages.Arena.Chances.Action-Bar", ""));
     getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_COOLDOWN", new Message("In-Game.Messages.Arena.Cooldown", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_SWORD_ON_COOLDOWN", new Message("In-Game.Messages.Arena.Murderer.Sword-On-Cooldown", ""));
+    // Default message for murderer sword cooldown text when trying to attack during global cooldown
+    // Use %time% or integer replacement by MessageBuilder#integer
     getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_LOCATOR_BOW", new Message("In-Game.Messages.Arena.Locator.Bow", ""));
     getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_LOCATOR_INNOCENT", new Message("In-Game.Messages.Arena.Locator.Innocent", ""));
     getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_LOCATOR_WATCH_OUT", new Message("In-Game.Messages.Arena.Locator.Watch-Out", ""));

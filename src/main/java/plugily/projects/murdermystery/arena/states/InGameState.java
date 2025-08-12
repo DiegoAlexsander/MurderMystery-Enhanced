@@ -66,6 +66,14 @@ public class InGameState extends PluginInGameState {
       addMurdererSpeed(pluginArena);
     }
     spawnGold(pluginArena);
+
+    // clear XP bars if someone is no longer a murderer or became spectator
+    for(Player p : pluginArena.getPlayers()) {
+      IUser u = getPlugin().getUserManager().getUser(p);
+      if(u.isSpectator()) {
+        try { p.setExp(0f); } catch (Throwable ignored) {}
+      }
+    }
   }
 
   private void addMurdererSpeed(Arena pluginArena) {

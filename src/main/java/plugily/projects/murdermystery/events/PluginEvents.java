@@ -42,6 +42,8 @@ import plugily.projects.murdermystery.Main;
 import plugily.projects.murdermystery.arena.Arena;
 import plugily.projects.murdermystery.arena.ArenaUtils;
 import plugily.projects.murdermystery.arena.role.Role;
+import plugily.projects.murdermystery.arena.MurdererTimerManager;
+import plugily.projects.minigamesbox.classic.handlers.language.MessageBuilder;
 
 /**
  * @author Plajer
@@ -79,6 +81,11 @@ public class PluginEvents implements Listener {
     }
 
     if(VersionUtils.getItemInHand(attacker).getType() != murdererSword.getType()) {
+      return;
+    }
+    // block during global murderer cooldown
+    if(attackerUser.getCooldown("murderer_cooldown") > 0) {
+      attacker.sendMessage("§cYour sword is on cooldown (" + (int) Math.ceil(attackerUser.getCooldown("murderer_cooldown")) + "s)");
       return;
     }
     if(attackerUser.getCooldown("sword_shoot") > 0) {
@@ -167,6 +174,15 @@ public class PluginEvents implements Listener {
     if(Role.isRole(Role.MURDERER, user, victimArena)) {
       return;
     }
+    // Abort if attacker is in murderer global cooldown
+    if(attackerUser.getCooldown("murderer_cooldown") > 0) {
+      Player attacker = attackerUser.getPlayer();
+      if(attacker != null) {
+        attacker.sendMessage("§cYour sword is on cooldown (" + (int) Math.ceil(attackerUser.getCooldown("murderer_cooldown")) + "s)");
+      }
+      return;
+    }
+
     XSound.ENTITY_PLAYER_DEATH.play(victim.getLocation(), 50, 1);
     victim.damage(100.0);
     attackerUser.adjustStatistic("LOCAL_KILLS", 1);
@@ -179,6 +195,9 @@ public class PluginEvents implements Listener {
       }
       ArenaUtils.dropBowAndAnnounce(arena, victim);
     }
+
+    // Start or refresh Murderer rampage on every kill
+    MurdererTimerManager.startOrRefreshRampage(attackerUser.getPlayer());
   }
 
   @EventHandler(priority = EventPriority.HIGH)

@@ -89,6 +89,7 @@ public class Main extends PluginMain {
     addFileName("trails");
     Arena.init(this);
     ArenaUtils.init(this);
+    MurdererTimerManager.init(this);
     new ArenaEvents(this);
     arenaManager = new ArenaManager(this);
     arenaRegistry.registerArenas();
