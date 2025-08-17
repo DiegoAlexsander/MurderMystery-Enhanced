@@ -76,6 +76,17 @@ public class ArenaEvents extends PluginArenaEvents {
 
   private void triggerLightsSabotage(Arena arena, Player murderer) {
     // Send titles and apply darkness/night vision
+    // Remove all GOLD from murderer's inventory upon sabotage
+    try {
+      IUser murdererUser = plugin.getUserManager().getUser(murderer);
+      // Clear the slot where GOLD is stored for murderers
+      murderer.getInventory().setItem(ItemPosition.GOLD_INGOTS.getMurdererItemPosition(), null);
+      // Also reset tracked local gold to match inventory removal
+      murdererUser.setStatistic("LOCAL_GOLD", 0);
+    } catch (Throwable ignored) {
+      // best-effort inventory cleanup
+    }
+
     for (Player p : arena.getPlayers()) {
       if (p.equals(murderer)) {
         // Murderer gets green title and optionally reinforced night vision
