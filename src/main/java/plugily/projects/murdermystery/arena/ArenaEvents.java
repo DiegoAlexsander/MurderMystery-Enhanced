@@ -87,11 +87,14 @@ public class ArenaEvents extends PluginArenaEvents {
       // best-effort inventory cleanup
     }
 
+    // Get configurable duration for sabotage effect
+    int sabotageDuration = plugin.getConfig().getInt("Gold.Sabotage.Duration", 30);
+
     for (Player p : arena.getPlayers()) {
       if (p.equals(murderer)) {
         // Murderer gets green title and optionally reinforced night vision
         VersionUtils.sendTitles(p, "§aYOU HAVE SABOTAGED ALL LIGHT SOURCES", null, 5, 40, 10);
-        try { XPotion.NIGHT_VISION.buildPotionEffect(20 * 35, 1).apply(p); } catch (Throwable ignored) {}
+        try { XPotion.NIGHT_VISION.buildPotionEffect(20 * (sabotageDuration + 5), 1).apply(p); } catch (Throwable ignored) {}
         continue;
       }
       VersionUtils.sendTitles(p, "§cLIGHTS HAVE BEEN SABOTAGED", null, 5, 40, 10);
@@ -99,16 +102,16 @@ public class ArenaEvents extends PluginArenaEvents {
       // Use Paper API for Darkness when available (1.19+); else Blindness
       if (plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.isCurrentEqualOrHigher(plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.v1_19)) {
         try {
-          p.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.DARKNESS, 20 * 30, 0, true, false, true));
+          p.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.DARKNESS, 20 * sabotageDuration, 0, true, false, true));
         } catch (Throwable ignored) {
-          try { XPotion.BLINDNESS.buildPotionEffect(20 * 30, 1).apply(p); } catch (Throwable ignored2) {}
+          try { XPotion.BLINDNESS.buildPotionEffect(20 * sabotageDuration, 1).apply(p); } catch (Throwable ignored2) {}
         }
       } else {
-        try { XPotion.BLINDNESS.buildPotionEffect(20 * 30, 1).apply(p); } catch (Throwable ignored) {}
+        try { XPotion.BLINDNESS.buildPotionEffect(20 * sabotageDuration, 1).apply(p); } catch (Throwable ignored) {}
       }
     }
 
-    // After 30s, send restored messages
+    // After configurable duration, send restored messages
     Bukkit.getScheduler().runTaskLater(plugin, () -> {
       for (Player p : arena.getPlayers()) {
         if (p.equals(murderer)) {
@@ -117,7 +120,7 @@ public class ArenaEvents extends PluginArenaEvents {
           p.sendMessage("§aLIGHTS HAVE BEEN RESTORED");
         }
       }
-    }, 20L * 30);
+    }, 20L * sabotageDuration);
   }
 
   @Override
@@ -256,8 +259,8 @@ public class ArenaEvents extends PluginArenaEvents {
     }
     // If a murderer hits threshold, trigger Lights Sabotage event
     if(Role.isRole(Role.MURDERER, user, arena)
-      && user.getStatistic("LOCAL_GOLD") >= plugin.getConfig().getInt("Gold.Amount.Bow", 10)
-      && plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.isCurrentEqualOrHigher(plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.v1_19)) {
+      && user.getStatistic("LOCAL_GOLD") >= plugin.getConfig().getInt("Gold.Amount.Sabotage", 10)
+      && plugin.getConfig().getBoolean("Gold.Sabotage.Enabled", true)) {
       // Do not reset their gold; they keep collecting
       triggerLightsSabotage(arena, player);
     }
@@ -299,7 +302,11 @@ public class ArenaEvents extends PluginArenaEvents {
     // prevent hits during global murderer cooldown
     if(plugin.getUserManager().getUser(attacker).getCooldown("murderer_cooldown") > 0) {
       int remain = (int) Math.ceil(plugin.getUserManager().getUser(attacker).getCooldown("murderer_cooldown"));
-      attacker.sendMessage("§cYour sword is on cooldown (" + remain + "s)");
+      new MessageBuilder("IN_GAME_MESSAGES_ARENA_SWORD_ON_COOLDOWN")
+        .asKey()
+        .integer(remain)
+        .player(attacker)
+        .sendPlayer();
       return;
     }
 

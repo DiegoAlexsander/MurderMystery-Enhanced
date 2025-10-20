@@ -219,6 +219,13 @@ Gold:
     Arrows: 3
     #How much arrows should a player with bow gets when he pick up a gold ingot?
     Pick-Up: 1
+    #How much gold should the murderer need to trigger lights sabotage (default: 10)
+    Sabotage: 10
+  Sabotage:
+    #How long should the darkness/blindness effect last in seconds for innocents? (default: 30)
+    Duration: 30
+    #Should the sabotage feature be enabled? When disabled, murderers won't trigger lights sabotage
+    Enabled: true
 
 
 Bow:
@@ -257,6 +264,12 @@ Murderer:
   Rampage-Seconds: 10
   # Seconds the Murderer cannot attack after rampage ends (global cooldown)
   Cooldown-Seconds: 30
+  # Should the plugin prevent consecutive murderer roles for the same player?
+  Prevent-Consecutive-Role: true
+  # Role selection system: 'contribution' (current system based on player performance) or 'random' (truly random selection)
+  # 'contribution' - Players with better performance have higher chances of getting specific roles
+  # 'random' - All players have equal chances regardless of performance (more balanced and unpredictable)
+  Role-Selection-System: contribution
 
 
 Sword:

@@ -85,7 +85,11 @@ public class PluginEvents implements Listener {
     }
     // block during global murderer cooldown
     if(attackerUser.getCooldown("murderer_cooldown") > 0) {
-      attacker.sendMessage("§cYour sword is on cooldown (" + (int) Math.ceil(attackerUser.getCooldown("murderer_cooldown")) + "s)");
+      new MessageBuilder("IN_GAME_MESSAGES_ARENA_SWORD_ON_COOLDOWN")
+        .asKey()
+        .integer((int) Math.ceil(attackerUser.getCooldown("murderer_cooldown")))
+        .player(attacker)
+        .sendPlayer();
       return;
     }
     if(attackerUser.getCooldown("sword_shoot") > 0) {
@@ -178,7 +182,11 @@ public class PluginEvents implements Listener {
     if(attackerUser.getCooldown("murderer_cooldown") > 0) {
       Player attacker = attackerUser.getPlayer();
       if(attacker != null) {
-        attacker.sendMessage("§cYour sword is on cooldown (" + (int) Math.ceil(attackerUser.getCooldown("murderer_cooldown")) + "s)");
+        new MessageBuilder("IN_GAME_MESSAGES_ARENA_SWORD_ON_COOLDOWN")
+          .asKey()
+          .integer((int) Math.ceil(attackerUser.getCooldown("murderer_cooldown")))
+          .player(attacker)
+          .sendPlayer();
       }
       return;
     }

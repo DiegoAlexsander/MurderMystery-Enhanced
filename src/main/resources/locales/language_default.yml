@@ -280,6 +280,8 @@ In-Game:
       Chances:
         Action-Bar: "&cMurderer Chance: %arena_murderer_chance% &a- &bDetective Chance: %arena_detective_chance%"
       Cooldown: "&8&l[%value%&8&l] &6%number% seconds"
+      Murderer:
+        Sword-On-Cooldown: "&cYour sword is on cooldown (%number%s)"
       Locator:
         Bow: "Bow locator"
         Innocent: "Innocent locator"

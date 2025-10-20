@@ -156,14 +156,25 @@ public class ArenaManager extends PluginArenaManager {
         IUser user = plugin.getUserManager().getUser(player);
         if(Role.isAnyRole(user, arena)) {
           boolean hasDeathRole = Role.isRole(Role.DEATH, user, arena);
+          boolean hasMurdererRole = Role.isRole(Role.MURDERER, user, arena);
           int multiplicator = 1;
           if(!hasDeathRole) {
             multiplicator = arena.getMaximumPlayers();
           }
-          pluginArena.adjustContributorValue(Role.MURDERER, user, plugin.getRandom().nextInt(10 * multiplicator));
-          pluginArena.adjustContributorValue(Role.DETECTIVE, user, plugin.getRandom().nextInt(10 * multiplicator));
+          
+          // Prevent consecutive murderer roles - drastically reduce contribution for recent murderers
+          if(hasMurdererRole && plugin.getConfig().getBoolean("Murderer.Prevent-Consecutive-Role", true)) {
+            // Murderers get severely reduced contribution to avoid consecutive selection
+            pluginArena.adjustContributorValue(Role.MURDERER, user, -(plugin.getRandom().nextInt(50 * multiplicator) + 100));
+            // But still get normal detective contribution
+            pluginArena.adjustContributorValue(Role.DETECTIVE, user, plugin.getRandom().nextInt(10 * multiplicator));
+          } else {
+            // Non-murderers get normal contribution boost
+            pluginArena.adjustContributorValue(Role.MURDERER, user, plugin.getRandom().nextInt(10 * multiplicator));
+            pluginArena.adjustContributorValue(Role.DETECTIVE, user, plugin.getRandom().nextInt(10 * multiplicator));
+          }
+          
           if(!hasDeathRole) {
-            boolean hasMurdererRole = Role.isRole(Role.MURDERER, user, arena);
             if(murderWon || !hasMurdererRole) {
               user.adjustStatistic("WINS", 1);
               plugin.getRewardsHandler().performReward(player, plugin.getRewardsHandler().getRewardType("WIN"));

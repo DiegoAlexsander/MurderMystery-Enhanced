@@ -63,6 +63,15 @@ public class StartingState extends PluginStartingState {
     }
 
     if(arena.getTimer() == 0 || arena.isForceStart()) {
+      // Informar qual sistema de seleção de roles está sendo usado (apenas quando o jogo começar)
+      String selectionSystem = pluginArena.getPlugin().getConfig().getString("Murderer.Role-Selection-System", "contribution");
+      String systemMessage = "random".equalsIgnoreCase(selectionSystem) 
+          ? "IN_GAME_MESSAGES_ARENA_ROLE_SELECTION_SYSTEM_RANDOM" 
+          : "IN_GAME_MESSAGES_ARENA_ROLE_SELECTION_SYSTEM_CONTRIBUTION";
+      
+      for(Player player : arena.getPlayersLeft()) {
+        new MessageBuilder(systemMessage).asKey().player(player).arena(pluginArena).sendPlayer();
+      }
       int size = pluginArena.getPlayerSpawnPoints().size();
       for(Player player : arena.getPlayersLeft()) {
         VersionUtils.teleport(player, pluginArena.getPlayerSpawnPoints().get(getPlugin().getRandom().nextInt(size)));
@@ -95,28 +104,48 @@ public class StartingState extends PluginStartingState {
 
   private void addRole(Arena arena, Role role, Set<Player> playersToSet) {
     String roleName = role.toString();
-
-    List<IUser> chancesRanking = getPlugin().getUserManager().getUsers(arena).stream().filter(user -> playersToSet.contains(user.getPlayer())).sorted(Comparator.comparingInt(user -> arena.getContributorValue(role, user))).collect(Collectors.toList());
-    Collections.reverse(chancesRanking);
-    List<Player> chancesPlayer = new ArrayList<>();
-    for(IUser user : chancesRanking) {
-      chancesPlayer.add(user.getPlayer());
+    String selectionSystem = arena.getPlugin().getConfig().getString("Murderer.Role-Selection-System", "contribution");
+    
+    List<Player> candidatePlayers;
+    
+    if("random".equalsIgnoreCase(selectionSystem)) {
+      // Sistema simplificado: seleção verdadeiramente aleatória
+      candidatePlayers = new ArrayList<>(playersToSet);
+      Collections.shuffle(candidatePlayers, getPlugin().getRandom());
+    } else {
+      // Sistema atual: baseado em contribuição
+      List<IUser> chancesRanking = getPlugin().getUserManager().getUsers(arena).stream()
+          .filter(user -> playersToSet.contains(user.getPlayer()))
+          .sorted(Comparator.comparingInt(user -> arena.getContributorValue(role, user)))
+          .collect(Collectors.toList());
+      Collections.reverse(chancesRanking);
+      
+      candidatePlayers = new ArrayList<>();
+      for(IUser user : chancesRanking) {
+        candidatePlayers.add(user.getPlayer());
+      }
     }
-    getPlugin().getDebugger().debug("Arena {0} | Role add {1} | List {2}", arena.getId(), roleName, chancesPlayer);
+
+    getPlugin().getDebugger().debug("Arena {0} | Role add {1} | System: {2} | List {3}", 
+        arena.getId(), roleName, selectionSystem, candidatePlayers);
 
     int amount = role == Role.MURDERER ? maxmurderer : maxdetectives;
-    for(int i = 0; i < amount; i++) {
-      IUser user = chancesRanking.get(i);
-      Player userPlayer = user.getPlayer();
-      arena.setCharacter(role, userPlayer);
-      arena.resetContributorValue(role, user);
-      playersToSet.remove(userPlayer);
-      new TitleBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_ROLE_" + roleName).asKey().arena(arena).player(userPlayer).sendPlayer();
+    for(int i = 0; i < amount && i < candidatePlayers.size(); i++) {
+      Player selectedPlayer = candidatePlayers.get(i);
+      IUser user = getPlugin().getUserManager().getUser(selectedPlayer);
+      
+      arena.setCharacter(role, selectedPlayer);
+      if("contribution".equalsIgnoreCase(selectionSystem)) {
+        arena.resetContributorValue(role, user);
+      }
+      playersToSet.remove(selectedPlayer);
+      new TitleBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_ROLE_" + roleName).asKey().arena(arena).player(selectedPlayer).sendPlayer();
+      
       if(role == Role.MURDERER) {
-        arena.getMurdererList().add(userPlayer);
+        arena.getMurdererList().add(selectedPlayer);
       } else if(role == Role.DETECTIVE) {
-        arena.getDetectiveList().add(userPlayer);
-        userPlayer.getInventory().setHeldItemSlot(0);
+        arena.getDetectiveList().add(selectedPlayer);
+        selectedPlayer.getInventory().setHeldItemSlot(0);
         Bukkit.getScheduler().runTaskLater(arena.getPlugin(), () -> {
           ItemPosition.setItem(user, ItemPosition.BOW, new ItemStack(Material.BOW, 1));
           ItemPosition.setItem(user, ItemPosition.INFINITE_ARROWS, new ItemStack(Material.ARROW, getPlugin().getConfig().getInt("Bow.Amount.Arrows.Detective", 3)));

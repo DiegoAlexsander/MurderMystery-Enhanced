@@ -268,7 +268,12 @@ In-Game:
     Arena:
       Chances:
         Action-Bar: "&cMurderer Chance: %arena_murderer_chance% &a- &bDetective Chance: %arena_detective_chance%"
+      Role-Selection:
+        System-Random: "&7Using &arandom &7role selection system - all players have equal chances"
+        System-Contribution: "&7Using &econtribution &7role selection system - better performance = higher chances"
       Cooldown: "&8&l[%value%&8&l] &6%number% seconds"
+      Murderer:
+        Sword-On-Cooldown: "&cYour sword is on cooldown (%number%s)"
       Locator:
         Bow: "Bow locator"
         Innocent: "Innocent locator"

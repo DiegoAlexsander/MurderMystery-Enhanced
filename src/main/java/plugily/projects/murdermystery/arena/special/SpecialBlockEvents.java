@@ -76,7 +76,7 @@ public class SpecialBlockEvents implements Listener {
     }
 
     for(SpecialBlock specialBlock : arena.getSpecialBlocks()) {
-      if(event.getClickedBlock().getType() == XMaterial.LEVER.parseMaterial() && plugin.getBukkitHelper().getNearbyBlocks(specialBlock.getLocation(), 3).contains(event.getClickedBlock())) {
+      if(event.getClickedBlock() != null && event.getClickedBlock().getType() == XMaterial.LEVER.parseMaterial() && plugin.getBukkitHelper().getNearbyBlocks(specialBlock.getLocation(), 3).contains(event.getClickedBlock())) {
         onPrayLeverClick(event);
         return;
       }
@@ -99,7 +99,7 @@ public class SpecialBlockEvents implements Listener {
   }
 
   private void onCauldronClick(PlayerInteractEvent event) {
-    if(event.getClickedBlock().getType() != Material.CAULDRON) {
+    if(event.getClickedBlock() == null || event.getClickedBlock().getType() != Material.CAULDRON) {
       return;
     }
 
@@ -128,7 +128,7 @@ public class SpecialBlockEvents implements Listener {
   }
 
   private void onPrayerClick(PlayerInteractEvent event) {
-    if(event.getClickedBlock().getType() != XMaterial.ENCHANTING_TABLE.parseMaterial()) {
+    if(event.getClickedBlock() == null || event.getClickedBlock().getType() != XMaterial.ENCHANTING_TABLE.parseMaterial()) {
       return;
     }
 

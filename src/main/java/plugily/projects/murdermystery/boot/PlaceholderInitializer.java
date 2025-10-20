@@ -147,8 +147,24 @@ public class PlaceholderInitializer {
           return null;
         }
 
-        IUser user = getUserManager().getUser(player);
-        return NumberUtils.round(((double) pluginArena.getContributorValue(Role.MURDERER, user) / (double) pluginArena.getTotalRoleChances(Role.MURDERER)) * 100.0, 0) + "%";
+        String selectionSystem = plugin.getConfig().getString("Murderer.Role-Selection-System", "contribution");
+        if("random".equalsIgnoreCase(selectionSystem)) {
+          // No sistema random, calcular porcentagem baseada na quantidade de murderers e jogadores
+          int totalPlayers = arena.getPlayersLeft().size();
+          int maxMurderers = 1;
+          if(pluginArena.getArenaOption("MURDERER_DIVIDER") > 1 && totalPlayers > pluginArena.getArenaOption("MURDERER_DIVIDER")) {
+            maxMurderers = (totalPlayers / pluginArena.getArenaOption("MURDERER_DIVIDER"));
+          }
+          if(totalPlayers > 0) {
+            double percentage = ((double) maxMurderers / (double) totalPlayers) * 100.0;
+            return NumberUtils.round(percentage, 1) + "%";
+          }
+          return "0%";
+        } else {
+          // Sistema de contribuição original
+          IUser user = getUserManager().getUser(player);
+          return NumberUtils.round(((double) pluginArena.getContributorValue(Role.MURDERER, user) / (double) pluginArena.getTotalRoleChances(Role.MURDERER)) * 100.0, 0) + "%";
+        }
       }
     });
 
@@ -160,8 +176,24 @@ public class PlaceholderInitializer {
           return null;
         }
 
-        IUser user = getUserManager().getUser(player);
-        return NumberUtils.round(((double) pluginArena.getContributorValue(Role.DETECTIVE, user) / (double) pluginArena.getTotalRoleChances(Role.DETECTIVE)) * 100.0, 0) + "%";
+        String selectionSystem = plugin.getConfig().getString("Murderer.Role-Selection-System", "contribution");
+        if("random".equalsIgnoreCase(selectionSystem)) {
+          // No sistema random, calcular porcentagem baseada na quantidade de detetives e jogadores
+          int totalPlayers = arena.getPlayersLeft().size();
+          int maxDetectives = 1;
+          if(pluginArena.getArenaOption("DETECTIVE_DIVIDER") > 1 && totalPlayers > pluginArena.getArenaOption("DETECTIVE_DIVIDER")) {
+            maxDetectives = (totalPlayers / pluginArena.getArenaOption("DETECTIVE_DIVIDER"));
+          }
+          if(totalPlayers > 0) {
+            double percentage = ((double) maxDetectives / (double) totalPlayers) * 100.0;
+            return NumberUtils.round(percentage, 1) + "%";
+          }
+          return "0%";
+        } else {
+          // Sistema de contribuição original
+          IUser user = getUserManager().getUser(player);
+          return NumberUtils.round(((double) pluginArena.getContributorValue(Role.DETECTIVE, user) / (double) pluginArena.getTotalRoleChances(Role.DETECTIVE)) * 100.0, 0) + "%";
+        }
       }
     });
 
