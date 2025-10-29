@@ -94,6 +94,10 @@ public class MessageInitializer {
     getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_BOW_PICKUP", new Message("In-Game.Messages.Arena.Playing.Bow.Pickup", ""));
     getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_BOW_SHOT_GOLD", new Message("In-Game.Messages.Arena.Playing.Bow.Shot.Gold", ""));
     getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_BOW_SHOT_TITLE", new Message("In-Game.Messages.Arena.Playing.Bow.Shot.Title", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_MURDERER_ACTIVATED", new Message("In-Game.Messages.Arena.Playing.Sabotage.Murderer.Activated", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_MURDERER_RESTORED", new Message("In-Game.Messages.Arena.Playing.Sabotage.Murderer.Restored", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_INNOCENT_ACTIVATED", new Message("In-Game.Messages.Arena.Playing.Sabotage.Innocent.Activated", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_INNOCENT_RESTORED", new Message("In-Game.Messages.Arena.Playing.Sabotage.Innocent.Restored", ""));
     getMessageManager().registerMessage("LEADERBOARD_STATISTICS_CONTRIBUTION_DETECTIVE", new Message("Leaderboard.Statistics.Detective-Contribution", ""));
     getMessageManager().registerMessage("LEADERBOARD_STATISTICS_CONTRIBUTION_MURDERER", new Message("Leaderboard.Statistics.Murderer-Contribution", ""));
 

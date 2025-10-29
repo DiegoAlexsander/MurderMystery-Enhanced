@@ -63,15 +63,6 @@ public class StartingState extends PluginStartingState {
     }
 
     if(arena.getTimer() == 0 || arena.isForceStart()) {
-      // Informar qual sistema de seleção de roles está sendo usado (apenas quando o jogo começar)
-      String selectionSystem = pluginArena.getPlugin().getConfig().getString("Murderer.Role-Selection-System", "contribution");
-      String systemMessage = "random".equalsIgnoreCase(selectionSystem) 
-          ? "IN_GAME_MESSAGES_ARENA_ROLE_SELECTION_SYSTEM_RANDOM" 
-          : "IN_GAME_MESSAGES_ARENA_ROLE_SELECTION_SYSTEM_CONTRIBUTION";
-      
-      for(Player player : arena.getPlayersLeft()) {
-        new MessageBuilder(systemMessage).asKey().player(player).arena(pluginArena).sendPlayer();
-      }
       int size = pluginArena.getPlayerSpawnPoints().size();
       for(Player player : arena.getPlayersLeft()) {
         VersionUtils.teleport(player, pluginArena.getPlayerSpawnPoints().get(getPlugin().getRandom().nextInt(size)));

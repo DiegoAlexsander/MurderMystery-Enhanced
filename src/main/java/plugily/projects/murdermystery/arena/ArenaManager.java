@@ -59,6 +59,18 @@ public class ArenaManager extends PluginArenaManager {
     }
     super.joinAttempt(player, arena);
     ArenaUtils.updateNameTagsVisibility(player);
+    
+    // Informar qual sistema de seleção de roles está sendo usado
+    String selectionSystem = plugin.getConfig().getString("Murderer.Role-Selection-System", "contribution");
+    String systemMessage = "random".equalsIgnoreCase(selectionSystem) 
+        ? "IN_GAME_MESSAGES_ARENA_ROLE_SELECTION_SYSTEM_RANDOM" 
+        : "IN_GAME_MESSAGES_ARENA_ROLE_SELECTION_SYSTEM_CONTRIBUTION";
+    
+    new plugily.projects.minigamesbox.classic.handlers.language.MessageBuilder(systemMessage)
+        .asKey()
+        .player(player)
+        .arena(pluginArena)
+        .sendPlayer();
   }
 
   @Override

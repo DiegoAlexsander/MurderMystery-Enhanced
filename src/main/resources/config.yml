@@ -226,6 +226,10 @@ Gold:
     Duration: 30
     #Should the sabotage feature be enabled? When disabled, murderers won't trigger lights sabotage
     Enabled: true
+    #Message type for sabotage notifications: "TITLE" or "CHAT"
+    #TITLE will display messages as titles on screen
+    #CHAT will display messages in the chat
+    Message-Type: "TITLE"
 
 
 Bow:

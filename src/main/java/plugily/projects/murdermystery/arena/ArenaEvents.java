@@ -89,15 +89,48 @@ public class ArenaEvents extends PluginArenaEvents {
 
     // Get configurable duration for sabotage effect
     int sabotageDuration = plugin.getConfig().getInt("Gold.Sabotage.Duration", 30);
+    
+    // Get message type configuration: TITLE or CHAT
+    String messageType = plugin.getConfig().getString("Gold.Sabotage.Message-Type", "TITLE").toUpperCase();
+    boolean useTitle = messageType.equals("TITLE");
 
     for (Player p : arena.getPlayers()) {
       if (p.equals(murderer)) {
-        // Murderer gets green title and optionally reinforced night vision
-        VersionUtils.sendTitles(p, "§aYOU HAVE SABOTAGED ALL LIGHT SOURCES", null, 5, 40, 10);
+        // Murderer gets green title/message and optionally reinforced night vision
+        if (useTitle) {
+          String murdererActivatedMsg = new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_MURDERER_ACTIVATED")
+            .asKey()
+            .player(p)
+            .arena(arena)
+            .build();
+          VersionUtils.sendTitles(p, murdererActivatedMsg, null, 5, 40, 10);
+        } else {
+          new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_MURDERER_ACTIVATED")
+            .asKey()
+            .player(p)
+            .arena(arena)
+            .sendPlayer();
+        }
         try { XPotion.NIGHT_VISION.buildPotionEffect(20 * (sabotageDuration + 5), 1).apply(p); } catch (Throwable ignored) {}
         continue;
       }
-      VersionUtils.sendTitles(p, "§cLIGHTS HAVE BEEN SABOTAGED", null, 5, 40, 10);
+      
+      // Send sabotage message to innocents/detectives
+      if (useTitle) {
+        String innocentActivatedMsg = new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_INNOCENT_ACTIVATED")
+          .asKey()
+          .player(p)
+          .arena(arena)
+          .build();
+        VersionUtils.sendTitles(p, innocentActivatedMsg, null, 5, 40, 10);
+      } else {
+        new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_INNOCENT_ACTIVATED")
+          .asKey()
+          .player(p)
+          .arena(arena)
+          .sendPlayer();
+      }
+      
       // Prefer server-supported Darkness (1.19+) else fall back to Blindness
       // Use Paper API for Darkness when available (1.19+); else Blindness
       if (plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.isCurrentEqualOrHigher(plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.v1_19)) {
@@ -115,9 +148,35 @@ public class ArenaEvents extends PluginArenaEvents {
     Bukkit.getScheduler().runTaskLater(plugin, () -> {
       for (Player p : arena.getPlayers()) {
         if (p.equals(murderer)) {
-          p.sendMessage("§cLIGHTS HAVE BEEN RESTORED");
+          if (useTitle) {
+            String murdererRestoredMsg = new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_MURDERER_RESTORED")
+              .asKey()
+              .player(p)
+              .arena(arena)
+              .build();
+            VersionUtils.sendTitles(p, murdererRestoredMsg, null, 5, 20, 5);
+          } else {
+            new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_MURDERER_RESTORED")
+              .asKey()
+              .player(p)
+              .arena(arena)
+              .sendPlayer();
+          }
         } else {
-          p.sendMessage("§aLIGHTS HAVE BEEN RESTORED");
+          if (useTitle) {
+            String innocentRestoredMsg = new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_INNOCENT_RESTORED")
+              .asKey()
+              .player(p)
+              .arena(arena)
+              .build();
+            VersionUtils.sendTitles(p, innocentRestoredMsg, null, 5, 20, 5);
+          } else {
+            new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_INNOCENT_RESTORED")
+              .asKey()
+              .player(p)
+              .arena(arena)
+              .sendPlayer();
+          }
         }
       }
     }, 20L * sabotageDuration);
