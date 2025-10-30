@@ -26,6 +26,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
+import java.util.List;
 import plugily.projects.minigamesbox.api.arena.IArenaState;
 import plugily.projects.minigamesbox.api.user.IUser;
 import plugily.projects.minigamesbox.classic.handlers.language.MessageBuilder;
@@ -75,11 +76,36 @@ public class SpecialBlockEvents implements Listener {
       return;
     }
 
+    // Check if player clicked a lever or button near a circuit breaker THAT WAS PAID FOR
     for(SpecialBlock specialBlock : arena.getSpecialBlocks()) {
-      if(event.getClickedBlock() != null && event.getClickedBlock().getType() == XMaterial.LEVER.parseMaterial() && plugin.getBukkitHelper().getNearbyBlocks(specialBlock.getLocation(), 3).contains(event.getClickedBlock())) {
-        onPrayLeverClick(event);
-        return;
+      if(specialBlock.getSpecialBlockType() == SpecialBlock.SpecialBlockType.CIRCUIT_BREAKER) {
+        // Only track if player paid for this breaker
+        int playerClicks = arena.getCircuitBreakerPlayerClicks(specialBlock.getLocation(), event.getPlayer().getUniqueId());
+        if (playerClicks > 0 && !arena.isCircuitBreakerActivated(specialBlock.getLocation())) {
+          List<org.bukkit.block.Block> nearbyBlocks = plugin.getBukkitHelper().getNearbyBlocks(specialBlock.getLocation(), 3);
+          if(nearbyBlocks.contains(event.getClickedBlock())) {
+            Material clickedType = event.getClickedBlock().getType();
+            if(clickedType == XMaterial.LEVER.parseMaterial() || clickedType.name().contains("BUTTON")) {
+              arena.trackCircuitBreakerInteraction(specialBlock.getLocation(), event.getPlayer().getUniqueId());
+              return;
+            }
+          }
+        }
       }
+    }
+
+    // Check prayer lever (only near enchanting table)
+    for(SpecialBlock specialBlock : arena.getSpecialBlocks()) {
+      if(specialBlock.getSpecialBlockType() == SpecialBlock.SpecialBlockType.PRAISE_DEVELOPER) {
+        if(event.getClickedBlock() != null && event.getClickedBlock().getType() == XMaterial.LEVER.parseMaterial() && plugin.getBukkitHelper().getNearbyBlocks(specialBlock.getLocation(), 3).contains(event.getClickedBlock())) {
+          onPrayLeverClick(event);
+          return;
+        }
+      }
+    }
+
+    // Handle direct special block clicks
+    for(SpecialBlock specialBlock : arena.getSpecialBlocks()) {
       if(specialBlock.getLocation().getBlock().equals(event.getClickedBlock())) {
         switch(specialBlock.getSpecialBlockType()) {
           case MYSTERY_CAULDRON:
@@ -87,6 +113,9 @@ public class SpecialBlockEvents implements Listener {
             return;
           case PRAISE_DEVELOPER:
             onPrayerClick(event);
+            return;
+          case CIRCUIT_BREAKER:
+            onCircuitBreakerClick(event, specialBlock);
             return;
           case HORSE_PURCHASE:
           case RAPID_TELEPORTATION:
@@ -183,4 +212,88 @@ public class SpecialBlockEvents implements Listener {
     }
   }
 
+  private void onCircuitBreakerClick(PlayerInteractEvent event, SpecialBlock specialBlock) {
+    // Cancel the event FIRST to prevent opening inventory
+    event.setCancelled(true);
+    
+    // Accept GLASS only
+    if(event.getClickedBlock() == null || event.getClickedBlock().getType() != Material.GLASS) {
+      return;
+    }
+
+    Arena arena = plugin.getArenaRegistry().getArena(event.getPlayer());
+    if(arena == null) {
+      return;
+    }
+    
+    IUser user = plugin.getUserManager().getUser(event.getPlayer());
+    if(user.isSpectator()) {
+      return;
+    }
+
+    if (!arena.isSabotageActive()) {
+      new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_CIRCUIT_BREAKER_NO_SABOTAGE")
+        .asKey()
+        .player(event.getPlayer())
+        .arena(arena)
+        .sendPlayer();
+      return;
+    }
+
+    // Check if already activated
+    if(arena.isCircuitBreakerActivated(specialBlock.getLocation())) {
+      new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_CIRCUIT_BREAKER_ALREADY_ACTIVATED")
+        .asKey()
+        .player(event.getPlayer())
+        .arena(arena)
+        .sendPlayer();
+      return;
+    }
+
+    // Check if player has glowstone dust in hand
+    ItemStack itemInHand = event.getPlayer().getInventory().getItemInMainHand();
+    int requiredAmount = plugin.getConfig().getInt("Gold.Sabotage.Restoration.Circuit-Breakers.Glowstone-Dust.Required-Amount", 1);
+    int currentAmount = arena.getCircuitBreakerGlowstoneCount(specialBlock.getLocation());
+    int remainingAmount = arena.getCircuitBreakerGlowstoneRemaining(specialBlock.getLocation());
+    
+    if(itemInHand == null || itemInHand.getType() != Material.GLOWSTONE_DUST || itemInHand.getAmount() < 1) {
+      // Show how many glowstone dust are still needed (global counter)
+      new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_CIRCUIT_BREAKER_NO_GLOWSTONE")
+        .asKey()
+        .player(event.getPlayer())
+        .arena(arena)
+        .integer(remainingAmount)
+        .sendPlayer();
+      return;
+    }
+
+    // Consume 1 glowstone dust and add to global counter
+    itemInHand.setAmount(itemInHand.getAmount() - 1);
+    arena.addGlowstoneToCircuitBreaker(specialBlock.getLocation(), 1);
+    
+    // Check if enough glowstone has been deposited
+    if(arena.getCircuitBreakerGlowstoneRemaining(specialBlock.getLocation()) > 0) {
+      // Still need more glowstone
+      int stillNeeded = arena.getCircuitBreakerGlowstoneRemaining(specialBlock.getLocation());
+      new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_CIRCUIT_BREAKER_PROGRESS")
+        .asKey()
+        .player(event.getPlayer())
+        .arena(arena)
+        .integer(stillNeeded)
+        .sendPlayer();
+      return;
+    }
+
+    // Payment complete! Mark as "paid" - initialize with 1 click (meaning payment done)
+    arena.getCircuitBreakerInteractions().computeIfAbsent(specialBlock.getLocation(), k -> new java.util.HashMap<>()).put(event.getPlayer().getUniqueId(), 1);
+    
+    // Send message to interact with components
+    new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_CIRCUIT_BREAKER_INCOMPLETE_STRUCTURE")
+      .asKey()
+      .player(event.getPlayer())
+      .arena(arena)
+      .sendPlayer();
+  }
+
 }
+

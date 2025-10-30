@@ -356,12 +356,32 @@ In-Game:
           # Messages for lights sabotage feature
           # %plugin_prefix% will be replaced with plugin prefix
           # %duration% will be replaced with sabotage duration
+          # %number% will be replaced with numbers (gold collected, circuit breakers activated)
+          # %value% will be replaced with required values
           Murderer:
             Activated: "&aYOU HAVE SABOTAGED ALL LIGHT SOURCES"
             Restored: "&cLIGHTS HAVE BEEN RESTORED"
           Innocent:
             Activated: "&cLIGHTS HAVE BEEN SABOTAGED"
             Restored: "&aLIGHTS HAVE BEEN RESTORED"
+          Permanent:
+            # Messages for permanent sabotage mode
+            Murderer:
+              Activated: "&aYOU HAVE SABOTAGED ALL LIGHT SOURCES - PERMANENTLY!"
+            Innocent:
+              Activated: "&cLIGHTS HAVE BEEN SABOTAGED - FIND A WAY TO RESTORE THEM!"
+          Gold-Progress: "%plugin_prefix% &eGold collected! Progress: &a%number%&7/&c%value%"
+          Lights-Restored-Broadcast: "%plugin_prefix% &aAll lights have been restored! The sabotage has ended."
+        Glowstone-Dust:
+          Pickup: "%plugin_prefix% &eYou picked up glowstone dust! Use it to activate circuit breakers."
+        Circuit-Breaker:
+          Activated: "%plugin_prefix% &a%player% activated a circuit breaker! &7(&e%number%&7/&e%value%&7)"
+          Already-Activated: "%plugin_prefix% &cThis circuit breaker is already activated!"
+          No-Glowstone: "%plugin_prefix% &cYou need to deposit glowstone dust! &7(&e%number% more needed&7)"
+          Progress: "%plugin_prefix% &eGlowstone dust deposited! &7(&e%number% more needed&7)"
+          No-Sabotage: "%plugin_prefix% &cCircuit breakers can only be used during sabotage to restore lights!"
+          Incomplete-Structure: "%plugin_prefix% &eGlowstone dust requirement met! Now interact with the lever and 2 buttons nearby to complete activation!"
+          Hologram: "&e&lCircuit Breaker;&e1 Lever + 2 Buttons;&eCosts %number% Glowstone Dust"
 
 
 

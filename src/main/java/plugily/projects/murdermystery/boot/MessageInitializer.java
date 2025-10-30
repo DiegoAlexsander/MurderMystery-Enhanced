@@ -98,6 +98,18 @@ public class MessageInitializer {
     getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_MURDERER_RESTORED", new Message("In-Game.Messages.Arena.Playing.Sabotage.Murderer.Restored", ""));
     getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_INNOCENT_ACTIVATED", new Message("In-Game.Messages.Arena.Playing.Sabotage.Innocent.Activated", ""));
     getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_INNOCENT_RESTORED", new Message("In-Game.Messages.Arena.Playing.Sabotage.Innocent.Restored", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_PERMANENT_MURDERER_ACTIVATED", new Message("In-Game.Messages.Arena.Playing.Sabotage.Permanent.Murderer.Activated", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_PERMANENT_INNOCENT_ACTIVATED", new Message("In-Game.Messages.Arena.Playing.Sabotage.Permanent.Innocent.Activated", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_GOLD_PROGRESS", new Message("In-Game.Messages.Arena.Playing.Sabotage.Gold-Progress", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_LIGHTS_RESTORED_BROADCAST", new Message("In-Game.Messages.Arena.Playing.Sabotage.Lights-Restored-Broadcast", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_GLOWSTONE_DUST_PICKUP", new Message("In-Game.Messages.Arena.Playing.Glowstone-Dust.Pickup", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_CIRCUIT_BREAKER_ACTIVATED", new Message("In-Game.Messages.Arena.Playing.Circuit-Breaker.Activated", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_CIRCUIT_BREAKER_ALREADY_ACTIVATED", new Message("In-Game.Messages.Arena.Playing.Circuit-Breaker.Already-Activated", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_CIRCUIT_BREAKER_NO_GLOWSTONE", new Message("In-Game.Messages.Arena.Playing.Circuit-Breaker.No-Glowstone", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_CIRCUIT_BREAKER_PROGRESS", new Message("In-Game.Messages.Arena.Playing.Circuit-Breaker.Progress", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_CIRCUIT_BREAKER_NO_SABOTAGE", new Message("In-Game.Messages.Arena.Playing.Circuit-Breaker.No-Sabotage", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_CIRCUIT_BREAKER_INCOMPLETE_STRUCTURE", new Message("In-Game.Messages.Arena.Playing.Circuit-Breaker.Incomplete-Structure", ""));
+    getMessageManager().registerMessage("IN_GAME_MESSAGES_ARENA_PLAYING_CIRCUIT_BREAKER_HOLOGRAM", new Message("In-Game.Messages.Arena.Playing.Circuit-Breaker.Hologram", ""));
     getMessageManager().registerMessage("LEADERBOARD_STATISTICS_CONTRIBUTION_DETECTIVE", new Message("Leaderboard.Statistics.Detective-Contribution", ""));
     getMessageManager().registerMessage("LEADERBOARD_STATISTICS_CONTRIBUTION_MURDERER", new Message("Leaderboard.Statistics.Murderer-Contribution", ""));
 

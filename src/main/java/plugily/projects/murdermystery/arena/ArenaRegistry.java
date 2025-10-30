@@ -94,6 +94,9 @@ public class ArenaRegistry extends PluginArenaRegistry {
     for(String loc : section.getStringList(id + ".confessionals")) {
       specialBlocks.add(new SpecialBlock(LocationSerializer.getLocation(loc), SpecialBlock.SpecialBlockType.PRAISE_DEVELOPER));
     }
+    for(String loc : section.getStringList(id + ".circuit-breakers")) {
+      specialBlocks.add(new SpecialBlock(LocationSerializer.getLocation(loc), SpecialBlock.SpecialBlockType.CIRCUIT_BREAKER));
+    }
 
     specialBlocks.forEach(((Arena) arena)::loadSpecialBlock);
     return true;

@@ -222,14 +222,40 @@ Gold:
     #How much gold should the murderer need to trigger lights sabotage (default: 10)
     Sabotage: 10
   Sabotage:
-    #How long should the darkness/blindness effect last in seconds for innocents? (default: 30)
-    Duration: 30
     #Should the sabotage feature be enabled? When disabled, murderers won't trigger lights sabotage
     Enabled: true
+    #Sabotage mode: "TEMPORARY" or "PERMANENT"
+    #TEMPORARY - Lights restore automatically after configured duration
+    #PERMANENT - Lights stay sabotaged until innocents/detectives restore them manually
+    Mode: "TEMPORARY"
+    #How long should the darkness/blindness effect last in seconds for innocents? (Only for TEMPORARY mode)
+    Duration: 30
     #Message type for sabotage notifications: "TITLE" or "CHAT"
     #TITLE will display messages as titles on screen
     #CHAT will display messages in the chat
     Message-Type: "TITLE"
+    Restoration:
+      #Restoration system for PERMANENT mode: "GOLD_COLLECTION" or "CIRCUIT_BREAKERS" or "BOTH"
+      #GOLD_COLLECTION - Innocents/detectives must collect gold together to restore lights (no glowstone dust spawns)
+      #CIRCUIT_BREAKERS - Players must activate ALL circuit breakers using glowstone dust (glowstone dust spawns)
+      #BOTH - Both systems must be completed to restore lights (glowstone dust spawns)
+      System: "GOLD_COLLECTION"
+      Gold-Collection:
+        #How much gold must be collected globally by all innocents/detectives to restore lights
+        Amount: 50
+      Circuit-Breakers:
+        #Glowstone dust spawn settings (only applies when System is CIRCUIT_BREAKERS or BOTH)
+        Glowstone-Dust:
+          #Should we change spawner mode to spawn on all spawners instant of random one
+          Spawner-Mode: false
+          #Should we disable the glowstone dust spawn limit (It does not spawn more dust than spawner locations)
+          Limiter: false
+          #Should we spawn more than 1 glowstone dust at a spawner at the same time
+          Multiple: false
+          #How many seconds between each glowstone dust spawn (default: 3)
+          Spawn-Interval: 3
+          #How many glowstone dust required to activate ONE circuit breaker (default: 1)
+          Required-Amount: 1
 
 
 Bow:

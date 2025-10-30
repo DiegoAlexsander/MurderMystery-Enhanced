@@ -61,6 +61,7 @@ public class Arena extends PluginArena {
   private final List<Player> detectives = new ArrayList<>();
   private final List<Player> murderers = new ArrayList<>();
   private final List<Item> goldSpawned = new ArrayList<>();
+  private final List<Item> glowstoneDustSpawned = new ArrayList<>();
   private final List<Corpse> corpses = new ArrayList<>();
   private final List<Stand> stands = new ArrayList<>();
   private final List<SpecialBlock> specialBlocks = new ArrayList<>();
@@ -68,10 +69,20 @@ public class Arena extends PluginArena {
   private List<Location> playerSpawnPoints = new ArrayList<>();
   private int spawnGoldTimer = 0;
   private int spawnGoldTime = 0;
+  private int spawnGlowstoneDustTimer = 0;
   private boolean detectiveDead;
   private boolean murdererLocatorReceived;
   private boolean hideChances;
   private boolean goldVisuals = false;
+  
+  // Permanent sabotage system fields
+  private boolean sabotageActive = false;
+  private int globalGoldCollected = 0;
+  private final Set<Location> activatedCircuitBreakers = new HashSet<>();
+  private final Map<Location, Map<UUID, Integer>> circuitBreakerInteractions = new HashMap<>(); // tracks click count per player
+  private final Map<Location, Integer> circuitBreakerGlowstoneCount = new HashMap<>(); // tracks global glowstone dust deposited per breaker
+  private BukkitTask glowstoneDustSpawnTask;
+  
   private final Map<CharacterType, Player> gameCharacters = new EnumMap<>(CharacterType.class);
   private final MapRestorerManager mapRestorerManager;
   private ArmorStandHologram bowHologram;
@@ -217,6 +228,14 @@ public class Arena extends PluginArena {
           prayer.appendLine(new MessageBuilder(str).build());
         }
         block.setArmorStandHologram(prayer);
+        break;
+      case CIRCUIT_BREAKER:
+        ArmorStandHologram circuitBreakerHolo = new ArmorStandHologram(plugin.getBukkitHelper().getBlockCenter(block.getLocation()));
+        int requiredGlowstone = plugin.getConfig().getInt("Gold.Sabotage.Restoration.Circuit-Breakers.Glowstone-Dust.Required-Amount", 1);
+        for(String str : plugin.getLanguageManager().getLanguageMessage("In-Game.Messages.Arena.Playing.Circuit-Breaker.Hologram").split(";")) {
+          circuitBreakerHolo.appendLine(new MessageBuilder(str).integer(requiredGlowstone).build());
+        }
+        block.setArmorStandHologram(circuitBreakerHolo);
         break;
       case HORSE_PURCHASE:
       case RAPID_TELEPORTATION:
@@ -423,6 +442,227 @@ public class Arena extends PluginArena {
 
   public void resetContributorValue(Role role, IUser user) {
     user.setStatistic("CONTRIBUTION_" + role.name(), 1);
+  }
+
+  // Permanent sabotage system methods
+  
+  public boolean isSabotageActive() {
+    return sabotageActive;
+  }
+
+  public void setSabotageActive(boolean active) {
+    this.sabotageActive = active;
+    if (!active) {
+      // Reset sabotage state when deactivated
+      globalGoldCollected = 0;
+      activatedCircuitBreakers.clear();
+      circuitBreakerInteractions.clear();
+      circuitBreakerGlowstoneCount.clear(); // Reset glowstone counters
+      
+      // Remove glowstone dust from ground
+      glowstoneDustSpawned.stream().filter(java.util.Objects::nonNull).forEach(org.bukkit.entity.Item::remove);
+      glowstoneDustSpawned.clear();
+      
+      // Remove glowstone dust from player inventories
+      for(org.bukkit.entity.Player player : getPlayers()) {
+        player.getInventory().remove(org.bukkit.Material.GLOWSTONE_DUST);
+      }
+      
+      if (glowstoneDustSpawnTask != null) {
+        glowstoneDustSpawnTask.cancel();
+        glowstoneDustSpawnTask = null;
+      }
+    }
+  }
+
+  public int getGlobalGoldCollected() {
+    return globalGoldCollected;
+  }
+
+  public void addGlobalGoldCollected(int amount) {
+    this.globalGoldCollected += amount;
+  }
+
+  public void resetGlobalGoldCollected() {
+    this.globalGoldCollected = 0;
+  }
+
+  public Set<Location> getActivatedCircuitBreakers() {
+    return activatedCircuitBreakers;
+  }
+
+  public void activateCircuitBreaker(Location location) {
+    activatedCircuitBreakers.add(location);
+  }
+
+  public boolean isCircuitBreakerActivated(Location location) {
+    return activatedCircuitBreakers.contains(location);
+  }
+  
+  public void trackCircuitBreakerInteraction(Location location, UUID playerId) {
+    Map<UUID, Integer> playerClicks = circuitBreakerInteractions.computeIfAbsent(location, k -> new HashMap<>());
+    playerClicks.put(playerId, playerClicks.getOrDefault(playerId, 0) + 1);
+    
+    // Check if player completed all interactions (4 total: 1 payment + 3 clicks on lever/buttons)
+    if (playerClicks.get(playerId) >= 4) {
+      // Activate circuit breaker automatically
+      activateCircuitBreaker(location);
+      playerClicks.remove(playerId);
+      
+      // Send activation message
+      org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(playerId);
+      if (player != null) {
+        new plugily.projects.minigamesbox.classic.handlers.language.MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_CIRCUIT_BREAKER_ACTIVATED")
+          .asKey()
+          .player(player)
+          .arena(this)
+          .integer(activatedCircuitBreakers.size())
+          .value(String.valueOf(getCircuitBreakerCount()))
+          .sendArena();
+        
+        // Check if restoration should occur
+        checkCircuitBreakerRestoration();
+      }
+    }
+  }
+  
+  private void checkCircuitBreakerRestoration() {
+    String restorationSystem = getPlugin().getConfig().getString("Gold.Sabotage.Restoration.System", "GOLD_COLLECTION").toUpperCase();
+    int totalBreakers = getCircuitBreakerCount();
+    int activatedBreakers = activatedCircuitBreakers.size();
+
+    if(activatedBreakers >= totalBreakers && totalBreakers > 0) {
+      boolean canRestore = true;
+
+      // If BOTH system, also check gold collection
+      if(restorationSystem.equals("BOTH")) {
+        int requiredGold = getPlugin().getConfig().getInt("Gold.Sabotage.Restoration.Gold-Collection.Amount", 50);
+        canRestore = (globalGoldCollected >= requiredGold);
+      }
+
+      if(canRestore || restorationSystem.equals("CIRCUIT_BREAKERS")) {
+        // Call restoreLights through a scheduled task to avoid threading issues
+        org.bukkit.Bukkit.getScheduler().runTask(getPlugin(), () -> {
+          // Remove effects from all players
+          for(org.bukkit.entity.Player p : getPlayers()) {
+            p.removePotionEffect(org.bukkit.potion.PotionEffectType.BLINDNESS);
+            p.removePotionEffect(org.bukkit.potion.PotionEffectType.NIGHT_VISION);
+            if (plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.isCurrentEqualOrHigher(plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.v1_19)) {
+              try {
+                p.removePotionEffect(org.bukkit.potion.PotionEffectType.DARKNESS);
+              } catch (Throwable ignored) {}
+            }
+          }
+          
+          // Deactivate sabotage (this will also clear glowstone dust)
+          setSabotageActive(false);
+          
+          // Broadcast restoration success
+          for(org.bukkit.entity.Player p : getPlayers()) {
+            new plugily.projects.minigamesbox.classic.handlers.language.MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_LIGHTS_RESTORED_BROADCAST")
+              .asKey()
+              .player(p)
+              .arena(this)
+              .sendPlayer();
+          }
+        });
+      }
+    }
+  }
+  
+  public int getCircuitBreakerPlayerClicks(Location location, UUID playerId) {
+    Map<UUID, Integer> playerClicks = circuitBreakerInteractions.get(location);
+    if (playerClicks == null) {
+      return 0;
+    }
+    return playerClicks.getOrDefault(playerId, 0);
+  }
+  
+  public Map<Location, Map<UUID, Integer>> getCircuitBreakerInteractions() {
+    return circuitBreakerInteractions;
+  }
+  
+  public void clearCircuitBreakerInteraction(Location location, UUID playerId) {
+    Map<UUID, Integer> playerClicks = circuitBreakerInteractions.get(location);
+    if (playerClicks != null) {
+      playerClicks.remove(playerId);
+    }
+  }
+
+  public int getCircuitBreakerCount() {
+    return (int) specialBlocks.stream()
+        .filter(block -> block.getSpecialBlockType() == SpecialBlock.SpecialBlockType.CIRCUIT_BREAKER)
+        .filter(block -> isCircuitBreakerValid(block))
+        .count();
+  }
+  
+  private boolean isCircuitBreakerValid(SpecialBlock block) {
+    // Check if circuit breaker has required structure (1 lever + 2 buttons)
+    List<org.bukkit.block.Block> nearbyBlocks = plugin.getBukkitHelper().getNearbyBlocks(block.getLocation(), 3);
+    int leverCount = 0;
+    int buttonCount = 0;
+    
+    for(org.bukkit.block.Block nearbyBlock : nearbyBlocks) {
+      if(nearbyBlock.getType().name().equals("LEVER")) {
+        leverCount++;
+      }
+      if(nearbyBlock.getType().name().contains("BUTTON")) {
+        buttonCount++;
+      }
+    }
+    
+    return leverCount >= 1 && buttonCount >= 2;
+  }
+
+  @NotNull
+  public List<Item> getGlowstoneDustSpawned() {
+    return glowstoneDustSpawned;
+  }
+
+  public int getSpawnGlowstoneDustTimer() {
+    return spawnGlowstoneDustTimer;
+  }
+
+  public void setSpawnGlowstoneDustTimer(int timer) {
+    this.spawnGlowstoneDustTimer = timer;
+  }
+
+  public BukkitTask getGlowstoneDustSpawnTask() {
+    return glowstoneDustSpawnTask;
+  }
+
+  public void setGlowstoneDustSpawnTask(BukkitTask task) {
+    this.glowstoneDustSpawnTask = task;
+  }
+
+  /**
+   * Adds glowstone dust to a circuit breaker's counter (global per breaker)
+   */
+  public void addGlowstoneToCircuitBreaker(Location breaker, int amount) {
+    circuitBreakerGlowstoneCount.put(breaker, circuitBreakerGlowstoneCount.getOrDefault(breaker, 0) + amount);
+  }
+
+  /**
+   * Gets how many glowstone dust have been deposited to this circuit breaker
+   */
+  public int getCircuitBreakerGlowstoneCount(Location breaker) {
+    return circuitBreakerGlowstoneCount.getOrDefault(breaker, 0);
+  }
+
+  /**
+   * Gets how many more glowstone dust are needed to activate this circuit breaker
+   */
+  public int getCircuitBreakerGlowstoneRemaining(Location breaker) {
+    int required = getPlugin().getConfig().getInt("Gold.Sabotage.Restoration.Circuit-Breakers.Glowstone-Dust.Required-Amount", 1);
+    int current = getCircuitBreakerGlowstoneCount(breaker);
+    return Math.max(0, required - current);
+  }
+
+  /**
+   * Resets the glowstone counter for a circuit breaker
+   */
+  public void resetCircuitBreakerGlowstone(Location breaker) {
+    circuitBreakerGlowstoneCount.remove(breaker);
   }
 
   public enum CharacterType {

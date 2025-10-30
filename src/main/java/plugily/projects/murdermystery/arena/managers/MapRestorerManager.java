@@ -69,6 +69,15 @@ public class MapRestorerManager extends PluginMapRestorerManager {
   public void clearGold() {
     arena.getGoldSpawned().stream().filter(Objects::nonNull).forEach(Item::remove);
     arena.getGoldSpawned().clear();
+    
+    // Also clear glowstone dust from ground
+    arena.getGlowstoneDustSpawned().stream().filter(Objects::nonNull).forEach(Item::remove);
+    arena.getGlowstoneDustSpawned().clear();
+    
+    // Remove glowstone dust from player inventories
+    for(org.bukkit.entity.Player player : arena.getPlayers()) {
+      player.getInventory().remove(org.bukkit.Material.GLOWSTONE_DUST);
+    }
   }
 
   public void clearCorpses() {

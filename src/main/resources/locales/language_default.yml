@@ -279,9 +279,12 @@ In-Game:
     Arena:
       Chances:
         Action-Bar: "&cMurderer Chance: %arena_murderer_chance% &a- &bDetective Chance: %arena_detective_chance%"
+      Role-Selection:
+        System-Random: "%plugin_prefix% &7Using &arandom &7role selection system - all players have equal chances"
+        System-Contribution: "%plugin_prefix% &7Using &econtribution &7role selection system - better performance = higher chances"
       Cooldown: "&8&l[%value%&8&l] &6%number% seconds"
       Murderer:
-        Sword-On-Cooldown: "&cYour sword is on cooldown (%number%s)"
+        Sword-On-Cooldown: "%plugin_prefix% &cYour sword is on cooldown (%number%s)"
       Locator:
         Bow: "Bow locator"
         Innocent: "Innocent locator"
@@ -299,9 +302,9 @@ In-Game:
             Lore:
               - "Cost 1 detective pass"
               - "You got %number%"
-        Fail: "You do not got enough passes for %value% role"
-        Success: "You will be %value% next round!"
-        Change: "You now got %number% %value% passes!"
+        Fail: "%plugin_prefix% You do not got enough passes for %value% role"
+        Success: "%plugin_prefix% You will be %value% next round!"
+        Change: "%plugin_prefix% You now got %number% %value% passes!"
       Playing:
         Time-Left: "5,20,5;%arena_time% seconds left!;After %arena_time%s the Murderer will lose"
         Role:
@@ -360,6 +363,30 @@ In-Game:
           Shot:
             Gold: "&a+1 Bow Shot!"
             Title: "5,20,5;;You collected 10 gold and got an arrow!"
+        Sabotage:
+          Murderer:
+            Activated: "&aYOU HAVE SABOTAGED ALL LIGHT SOURCES"
+            Restored: "&cLIGHTS HAVE BEEN RESTORED"
+          Innocent:
+            Activated: "&cLIGHTS HAVE BEEN SABOTAGED"
+            Restored: "&aLIGHTS HAVE BEEN RESTORED"
+          Permanent:
+            Murderer:
+              Activated: "&aYOU HAVE SABOTAGED ALL LIGHT SOURCES - PERMANENTLY!"
+            Innocent:
+              Activated: "&cLIGHTS HAVE BEEN SABOTAGED - FIND A WAY TO RESTORE THEM!"
+          Gold-Progress: "%plugin_prefix% &a%player% &ecollected gold! Progress: &a%number%&7/&c%value%"
+          Lights-Restored-Broadcast: "%plugin_prefix% &aAll lights have been restored! The sabotage has ended."
+        Glowstone-Dust:
+          Pickup: "%plugin_prefix% &eYou picked up glowstone dust! Use it to activate circuit breakers."
+        Circuit-Breaker:
+          Activated: "%plugin_prefix% &a%player% activated a circuit breaker! &7(&e%number%&7/&e%value%&7)"
+          Already-Activated: "%plugin_prefix% &cThis circuit breaker is already activated!"
+          No-Glowstone: "%plugin_prefix% &cYou need to deposit glowstone dust! &7(&e%number% more needed&7)"
+          Progress: "%plugin_prefix% &eGlowstone dust deposited! &7(&e%number% more needed&7)"
+          No-Sabotage: "%plugin_prefix% &cCircuit breakers can only be used during sabotage to restore lights!"
+          Incomplete-Structure: "%plugin_prefix% &eGlowstone dust requirement met! Now interact with the lever and 2 buttons nearby to complete activation!"
+          Hologram: "&e&lCircuit Breaker;&e1 Lever + 2 Buttons;&eCosts %number% Glowstone Dust"
 
 
 

@@ -68,6 +68,10 @@ public class SpecificCategory extends PluginSpecificCategory {
     gui.setItem((getInventoryLine() * 9) + 6, confessional);
     getItemList().add(confessional);
 
+    MaterialMultiLocationItem circuitBreaker = new MaterialMultiLocationItem(getSetupInventory(), new ItemBuilder(XMaterial.GLASS.parseMaterial()), "Circuit Breaker", "Target glass block\nand add it as a circuit breaker\nfor permanent sabotage restoration!\nRequires 1 lever and 2 buttons\nin radius of 3 blocks.\nCosts 1 glowstone dust to activate!", "circuit-breakers", Collections.singleton(Material.GLASS), false, 0);
+    gui.setItem((getInventoryLine() * 9) + 7, circuitBreaker);
+    getItemList().add(circuitBreaker);
+
   }
 
 }

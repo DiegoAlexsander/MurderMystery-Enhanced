@@ -20,6 +20,7 @@ package plugily.projects.murdermystery.arena;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EntityType;
@@ -39,6 +40,8 @@ import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.entity.Item;
+import org.bukkit.scheduler.BukkitTask;
 import plugily.projects.minigamesbox.api.arena.IArenaState;
 import plugily.projects.minigamesbox.api.arena.IPluginArena;
 import plugily.projects.minigamesbox.api.user.IUser;
@@ -75,111 +78,187 @@ public class ArenaEvents extends PluginArenaEvents {
   }
 
   private void triggerLightsSabotage(Arena arena, Player murderer) {
-    // Send titles and apply darkness/night vision
     // Remove all GOLD from murderer's inventory upon sabotage
     try {
       IUser murdererUser = plugin.getUserManager().getUser(murderer);
-      // Clear the slot where GOLD is stored for murderers
       murderer.getInventory().setItem(ItemPosition.GOLD_INGOTS.getMurdererItemPosition(), null);
-      // Also reset tracked local gold to match inventory removal
       murdererUser.setStatistic("LOCAL_GOLD", 0);
     } catch (Throwable ignored) {
       // best-effort inventory cleanup
     }
 
-    // Get configurable duration for sabotage effect
+    // Get sabotage configuration
+    String sabotageMode = plugin.getConfig().getString("Gold.Sabotage.Mode", "TEMPORARY").toUpperCase();
     int sabotageDuration = plugin.getConfig().getInt("Gold.Sabotage.Duration", 30);
-    
-    // Get message type configuration: TITLE or CHAT
     String messageType = plugin.getConfig().getString("Gold.Sabotage.Message-Type", "TITLE").toUpperCase();
     boolean useTitle = messageType.equals("TITLE");
+    boolean isPermanent = sabotageMode.equals("PERMANENT");
 
+    // Apply effects to all players
     for (Player p : arena.getPlayers()) {
       if (p.equals(murderer)) {
         // Murderer gets green title/message and optionally reinforced night vision
+        String msgKey = isPermanent ? "IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_PERMANENT_MURDERER_ACTIVATED" 
+                                    : "IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_MURDERER_ACTIVATED";
         if (useTitle) {
-          String murdererActivatedMsg = new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_MURDERER_ACTIVATED")
-            .asKey()
-            .player(p)
-            .arena(arena)
-            .build();
+          String murdererActivatedMsg = new MessageBuilder(msgKey).asKey().player(p).arena(arena).build();
           VersionUtils.sendTitles(p, murdererActivatedMsg, null, 5, 40, 10);
         } else {
-          new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_MURDERER_ACTIVATED")
-            .asKey()
-            .player(p)
-            .arena(arena)
-            .sendPlayer();
+          new MessageBuilder(msgKey).asKey().player(p).arena(arena).sendPlayer();
         }
-        try { XPotion.NIGHT_VISION.buildPotionEffect(20 * (sabotageDuration + 5), 1).apply(p); } catch (Throwable ignored) {}
+        
+        int nightVisionDuration = isPermanent ? Integer.MAX_VALUE : (20 * (sabotageDuration + 5));
+        try { XPotion.NIGHT_VISION.buildPotionEffect(nightVisionDuration, 1).apply(p); } catch (Throwable ignored) {}
         continue;
       }
       
       // Send sabotage message to innocents/detectives
+      String msgKey = isPermanent ? "IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_PERMANENT_INNOCENT_ACTIVATED"
+                                  : "IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_INNOCENT_ACTIVATED";
       if (useTitle) {
-        String innocentActivatedMsg = new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_INNOCENT_ACTIVATED")
-          .asKey()
-          .player(p)
-          .arena(arena)
-          .build();
+        String innocentActivatedMsg = new MessageBuilder(msgKey).asKey().player(p).arena(arena).build();
         VersionUtils.sendTitles(p, innocentActivatedMsg, null, 5, 40, 10);
       } else {
-        new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_INNOCENT_ACTIVATED")
-          .asKey()
-          .player(p)
-          .arena(arena)
-          .sendPlayer();
+        new MessageBuilder(msgKey).asKey().player(p).arena(arena).sendPlayer();
       }
       
-      // Prefer server-supported Darkness (1.19+) else fall back to Blindness
-      // Use Paper API for Darkness when available (1.19+); else Blindness
+      // Apply darkness/blindness effect
+      int effectDuration = isPermanent ? Integer.MAX_VALUE : (20 * sabotageDuration);
       if (plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.isCurrentEqualOrHigher(plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.v1_19)) {
         try {
-          p.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.DARKNESS, 20 * sabotageDuration, 0, true, false, true));
+          p.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.DARKNESS, effectDuration, 0, true, false, true));
         } catch (Throwable ignored) {
-          try { XPotion.BLINDNESS.buildPotionEffect(20 * sabotageDuration, 1).apply(p); } catch (Throwable ignored2) {}
+          try { XPotion.BLINDNESS.buildPotionEffect(effectDuration, 1).apply(p); } catch (Throwable ignored2) {}
         }
       } else {
-        try { XPotion.BLINDNESS.buildPotionEffect(20 * sabotageDuration, 1).apply(p); } catch (Throwable ignored) {}
+        try { XPotion.BLINDNESS.buildPotionEffect(effectDuration, 1).apply(p); } catch (Throwable ignored) {}
       }
     }
 
-    // After configurable duration, send restored messages
-    Bukkit.getScheduler().runTaskLater(plugin, () -> {
-      for (Player p : arena.getPlayers()) {
-        if (p.equals(murderer)) {
-          if (useTitle) {
-            String murdererRestoredMsg = new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_MURDERER_RESTORED")
-              .asKey()
-              .player(p)
-              .arena(arena)
-              .build();
-            VersionUtils.sendTitles(p, murdererRestoredMsg, null, 5, 20, 5);
-          } else {
-            new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_MURDERER_RESTORED")
-              .asKey()
-              .player(p)
-              .arena(arena)
-              .sendPlayer();
-          }
-        } else {
-          if (useTitle) {
-            String innocentRestoredMsg = new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_INNOCENT_RESTORED")
-              .asKey()
-              .player(p)
-              .arena(arena)
-              .build();
-            VersionUtils.sendTitles(p, innocentRestoredMsg, null, 5, 20, 5);
-          } else {
-            new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_INNOCENT_RESTORED")
-              .asKey()
-              .player(p)
-              .arena(arena)
-              .sendPlayer();
-          }
+    if (isPermanent) {
+      // Activate permanent sabotage mode
+      arena.setSabotageActive(true);
+      
+      // Start glowstone dust spawning only if using CIRCUIT_BREAKERS or BOTH modes
+      String restorationSystem = plugin.getConfig().getString("Gold.Sabotage.Restoration.System", "GOLD_COLLECTION").toUpperCase();
+      if (restorationSystem.equals("CIRCUIT_BREAKERS") || restorationSystem.equals("BOTH")) {
+        startGlowstoneDustSpawning(arena);
+      }
+    } else {
+      // Temporary mode - auto-restore after duration
+      Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        restoreLights(arena, murderer);
+      }, 20L * sabotageDuration);
+    }
+  }
+
+  private void startGlowstoneDustSpawning(Arena arena) {
+    int spawnInterval = plugin.getConfig().getInt("Gold.Glowstone-Dust.Spawn-Interval", 3);
+    
+    BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+      if (!arena.isSabotageActive() || arena.getArenaState() != IArenaState.IN_GAME) {
+        if (arena.getGlowstoneDustSpawnTask() != null) {
+          arena.getGlowstoneDustSpawnTask().cancel();
+          arena.setGlowstoneDustSpawnTask(null);
+        }
+        return;
+      }
+
+      arena.setSpawnGlowstoneDustTimer(arena.getSpawnGlowstoneDustTimer() + 1);
+      
+      if (arena.getSpawnGlowstoneDustTimer() >= spawnInterval) {
+        arena.setSpawnGlowstoneDustTimer(0);
+        spawnGlowstoneDust(arena);
+      }
+    }, 20L, 20L);
+    
+    arena.setGlowstoneDustSpawnTask(task);
+  }
+
+  private void spawnGlowstoneDust(Arena arena) {
+    if (arena.getGoldSpawnPoints().isEmpty()) {
+      return;
+    }
+
+    boolean spawnerMode = plugin.getConfig().getBoolean("Gold.Glowstone-Dust.Spawner-Mode", false);
+    boolean limiter = plugin.getConfig().getBoolean("Gold.Glowstone-Dust.Limiter", false);
+    boolean multiple = plugin.getConfig().getBoolean("Gold.Glowstone-Dust.Multiple", false);
+
+    if (spawnerMode) {
+      // Spawn at all spawners
+      for (Location location : arena.getGoldSpawnPoints()) {
+        if (!limiter || !isGlowstoneDustAtLocation(arena, location) || multiple) {
+          spawnGlowstoneDustAt(arena, location);
         }
       }
-    }, 20L * sabotageDuration);
+    } else {
+      // Spawn at random spawner
+      Location randomLocation = arena.getGoldSpawnPoints().get(plugin.getRandom().nextInt(arena.getGoldSpawnPoints().size()));
+      if (!limiter || !isGlowstoneDustAtLocation(arena, randomLocation) || multiple) {
+        spawnGlowstoneDustAt(arena, randomLocation);
+      }
+    }
+  }
+
+  private boolean isGlowstoneDustAtLocation(Arena arena, Location location) {
+    for (Item item : arena.getGlowstoneDustSpawned()) {
+      if (item.getLocation().distance(location) < 1.0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private void spawnGlowstoneDustAt(Arena arena, Location location) {
+    Item glowstoneDust = location.getWorld().dropItem(location, new org.bukkit.inventory.ItemStack(org.bukkit.Material.GLOWSTONE_DUST, 1));
+    glowstoneDust.setPickupDelay(0);
+    arena.getGlowstoneDustSpawned().add(glowstoneDust);
+  }
+
+  public void restoreLights(Arena arena, Player murderer) {
+    if (!arena.isSabotageActive() && !plugin.getConfig().getString("Gold.Sabotage.Mode", "TEMPORARY").equalsIgnoreCase("TEMPORARY")) {
+      return; // Already restored or not in permanent mode
+    }
+
+    String messageType = plugin.getConfig().getString("Gold.Sabotage.Message-Type", "TITLE").toUpperCase();
+    boolean useTitle = messageType.equals("TITLE");
+
+    // Remove effects and send restore messages
+    for (Player p : arena.getPlayers()) {
+      // Remove darkness/blindness effects
+      p.removePotionEffect(org.bukkit.potion.PotionEffectType.BLINDNESS);
+      if (plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.isCurrentEqualOrHigher(plugily.projects.minigamesbox.classic.utils.version.ServerVersion.Version.v1_19)) {
+        try {
+          p.removePotionEffect(org.bukkit.potion.PotionEffectType.DARKNESS);
+        } catch (Throwable ignored) {}
+      }
+
+      if (p.equals(murderer) || Role.isRole(Role.MURDERER, plugin.getUserManager().getUser(p), arena)) {
+        // Remove night vision from murderer
+        p.removePotionEffect(org.bukkit.potion.PotionEffectType.NIGHT_VISION);
+        
+        if (useTitle) {
+          String murdererRestoredMsg = new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_MURDERER_RESTORED")
+            .asKey().player(p).arena(arena).build();
+          VersionUtils.sendTitles(p, murdererRestoredMsg, null, 5, 20, 5);
+        } else {
+          new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_MURDERER_RESTORED")
+            .asKey().player(p).arena(arena).sendPlayer();
+        }
+      } else {
+        if (useTitle) {
+          String innocentRestoredMsg = new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_INNOCENT_RESTORED")
+            .asKey().player(p).arena(arena).build();
+          VersionUtils.sendTitles(p, innocentRestoredMsg, null, 5, 20, 5);
+        } else {
+          new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_INNOCENT_RESTORED")
+            .asKey().player(p).arena(arena).sendPlayer();
+        }
+      }
+    }
+
+    // Deactivate sabotage (this will also stop glowstone dust spawning)
+    arena.setSabotageActive(false);
   }
 
   @Override
@@ -260,6 +339,28 @@ public class ArenaEvents extends PluginArenaEvents {
 
       return;
     }
+    
+    // Handle glowstone dust pickup BEFORE gold check
+    if (e.getItem().getItemStack().getType() == Material.GLOWSTONE_DUST) {
+      if (!arena.isSabotageActive() || Role.isRole(Role.MURDERER, user, arena)) {
+        e.setCancelled(true);
+        return;
+      }
+      
+      e.getItem().remove();
+      XSound.BLOCK_GLASS_BREAK.play(player.getLocation(), 1, 2);
+      arena.getGlowstoneDustSpawned().remove(e.getItem());
+      
+      ItemStack glowstoneDustStack = new ItemStack(Material.GLOWSTONE_DUST, e.getItem().getItemStack().getAmount());
+      player.getInventory().addItem(glowstoneDustStack);
+      
+      new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_GLOWSTONE_DUST_PICKUP")
+        .asKey()
+        .player(player)
+        .arena(arena)
+        .sendPlayer();
+      return;
+    }
 
     if(e.getItem().getItemStack().getType() != Material.GOLD_INGOT) {
       return;
@@ -290,6 +391,48 @@ public class ArenaEvents extends PluginArenaEvents {
 
     new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SCORE_GOLD").asKey().player(player).arena(arena).sendPlayer();
     plugin.getRewardsHandler().performReward(player, plugin.getRewardsHandler().getRewardType("GOLD_PICKUP"));
+
+    // Check if sabotage is active and player is innocent/detective
+    if (arena.isSabotageActive() && !Role.isRole(Role.MURDERER, user, arena)) {
+      String restorationSystem = plugin.getConfig().getString("Gold.Sabotage.Restoration.System", "GOLD_COLLECTION").toUpperCase();
+      
+      if (restorationSystem.equals("GOLD_COLLECTION") || restorationSystem.equals("BOTH")) {
+        arena.addGlobalGoldCollected(stack.getAmount());
+        int required = plugin.getConfig().getInt("Gold.Sabotage.Restoration.Gold-Collection.Amount", 50);
+        
+        // Send progress message to ALL players in the arena (broadcast)
+        new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_GOLD_PROGRESS")
+          .asKey()
+          .integer(arena.getGlobalGoldCollected())
+          .value(String.valueOf(required))
+          .arena(arena)
+          .sendArena();
+        
+        // Check if restoration threshold reached
+        if (arena.getGlobalGoldCollected() >= required) {
+          boolean canRestore = true;
+          
+          // If BOTH system, also check circuit breakers
+          if (restorationSystem.equals("BOTH")) {
+            int totalBreakers = arena.getCircuitBreakerCount();
+            int activatedBreakers = arena.getActivatedCircuitBreakers().size();
+            canRestore = (activatedBreakers >= totalBreakers && totalBreakers > 0);
+          }
+          
+          if (canRestore) {
+            restoreLights(arena, null);
+            // Broadcast restoration success
+            for (Player p : arena.getPlayers()) {
+              new MessageBuilder("IN_GAME_MESSAGES_ARENA_PLAYING_SABOTAGE_LIGHTS_RESTORED_BROADCAST")
+                .asKey()
+                .player(p)
+                .arena(arena)
+                .sendPlayer();
+            }
+          }
+        }
+      }
+    }
 
     if(Role.isRole(Role.ANY_DETECTIVE, user, arena)) {
       ItemPosition.addItem(user, ItemPosition.ARROWS, new ItemStack(Material.ARROW, e.getItem().getItemStack().getAmount() * plugin.getConfig().getInt("Bow.Amount.Arrows.Detective", 3)));
